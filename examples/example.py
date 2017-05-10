@@ -100,6 +100,8 @@ while True:
 
 mutagen.generate_random()
 
+bbuzz.common.payload_analyze(datafile="/home/lockout/Source/Bbuzz/examples/icc-usecase/icc.packets")
+
 """
 # Setup and execute fuzzing
 print("[+] Fuzzing...")

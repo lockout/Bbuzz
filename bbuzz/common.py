@@ -8,6 +8,8 @@
 
 import ipaddress
 from binascii import unhexlify
+from math import log
+from collections import Counter
 
 
 BIT = 1
@@ -145,19 +147,18 @@ def onecase(case):
         return False
 
 
-def payload_analyze(data_lists=[], datafile=""):
+def payload_analyze(data_lists=[], datafile="", detailed_analysis=2):
     """Perform statistical analysis on a set of captured payloads.
-    Should be presented in binary strings"""
+    Payloads should be presented as binary strings"""
     if datafile:
         with open(datafile, 'r') as bindata:
             for data in bindata:
                 data_lists.append(data.strip())
             bindata.close()
     if data_lists:
+        """Get the bit mask of payload"""
         reflist = data_lists[0]
-        print(reflist, len(reflist))
-        match = ""
-        nomatch = ""
+        payload_mask = ['#'] * len(reflist)
         fail = False
         for position in range(0, len(reflist)):
             symbol = reflist[position]
@@ -167,22 +168,65 @@ def payload_analyze(data_lists=[], datafile=""):
                     fail = True
                     break
             if not fail:
-                # TODO: last bit missing on fail
-                match += symbol
-                if nomatch:
-                    print("load.add('b>{0}', '{1}', {2})".format(
-                        nomatch, 'binary', len(nomatch))
-                        )
-                    nomatch = ""
-            elif fail:
-                # TODO: last bit missing on not fail
-                match += symbol
-                nomatch += symbol
-                if match:
-                    print("load.add('b>{0}', '{1}', {2})".format(
-                        match, 'static', len(match))
-                        )
-                    match = ""
+                payload_mask[position] = symbol
+            if fail:
+                payload_mask[position] = "*"
                 fail = False
+        str_payload_mask = ''.join(payload_mask)
+        print("[+] Payload mask:\n{0}".format(str_payload_mask))
+
+        if detailed_analysis >= 1:
+            """Extract bit-groups"""
+            print("[+] Bit-groups:")
+            field_list = group_fields(reflist, str_payload_mask, silent=False)
+
+        if detailed_analysis >= 2:
+            """Calculate entropy for bit-groups"""
+            print("[+] Bit group entropy:")
+            payload_entropy = entropy(reflist)
+            print("\t[-] Payload entropy: {}".format(payload_entropy))
+
+
     if not data_lists and not datafile:
         error_handler("No data presented for pattern analysis!")
+
+
+def group_fields(payload, payload_mask, silent=True):
+    """Retrieves payload and bit-mask group intersections"""
+    bit_group = ""
+    payload_groups = []
+    if payload_mask[0] in {'0', '1'}:
+        char = False
+        prevchar = False
+    if payload_mask[0] == '*':
+        char = True
+        prevchar = True
+    for position in range(0, len(payload_mask)):
+        if payload_mask[position] in {'0', '1'}:
+            char = False
+        if payload_mask[position] == '*':
+            char = True
+        if char == prevchar:
+            bit_group += payload[position]
+        if char != prevchar:
+            instance = (bit_group, 'immutable' if char else 'mutable')
+            payload_groups.append(instance)
+            if not silent:
+                print(instance)
+            bit_group = payload[position]
+        prevchar = char
+    if bit_group:
+        instance = (bit_group, 'mutable' if payload[-1] == '*' else 'immutable')
+        if not silent:
+            print(instance)
+        payload_groups.append(instance)
+    return payload_groups
+
+
+def entropy(data):
+    """Calculate Shannon entropy of a string.
+    Courtesy of rosettacode.org"""
+    counter = Counter(data)
+    length = float(len(data))
+    ent = -sum(count / length * log(count / length, 2) for count in counter.values())
+    return ent
