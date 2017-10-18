@@ -10,6 +10,7 @@ import bbuzz.common
 
 
 def binary(case, caselen):
+    """Generate binary mutations"""
     mutations = []
     mutations.append(case)
     if bbuzz.common.zerocase(case):
@@ -32,6 +33,7 @@ def binary(case, caselen):
 
 
 def bitflip(case, caselen):
+    """Flip 1 to 0 and 0 to 1"""
     mask = "1" * caselen
     flip = str(bin(int(case, 2) ^ int(mask, 2)))[2:]
     return flip.zfill(caselen)
@@ -56,6 +58,7 @@ def bitshift_left(case, caselen):
 
 
 def endian(case, caselen):
+    """Swap the endianess of the sample"""
     step = bbuzz.common.BYTE
     if caselen % step == 0:
         split = [case[i:i + step] for i in range(0, caselen, step)][::-1]
@@ -66,6 +69,7 @@ def endian(case, caselen):
 
 
 def knownvalues(caselen):
+    """Insert known bad values"""
     values = []
     values.append(
             ("01"*(caselen * 2))[:caselen]

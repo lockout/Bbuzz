@@ -12,6 +12,7 @@ from hashlib import sha256
 
 
 class Payload():
+    """Payload Class"""
     bit_fields = []
 
     def add(self, bit_field_data, bit_field_options):

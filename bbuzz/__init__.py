@@ -9,8 +9,9 @@ import bbuzz.protocol
 import bbuzz.payload
 import bbuzz.mutate
 import bbuzz.common
+import bbuzz.fuzz
 
 
-__version__ = "0.0.6/Audrey"
+__version__ = "0.1.0/Bridgette"
 __license__ = "MIT"
 __author__ = "Lockout"

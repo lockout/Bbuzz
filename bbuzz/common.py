@@ -179,13 +179,13 @@ def payload_analyze(data_lists=[], datafile="", detailed_analysis=2):
             """Extract bit-groups"""
             print("[+] Bit-groups:")
             field_list = group_fields(reflist, str_payload_mask, silent=False)
+            print("\t[-] Bit group: {}".format(field_list))
 
         if detailed_analysis >= 2:
             """Calculate entropy for bit-groups"""
             print("[+] Bit group entropy:")
             payload_entropy = entropy(reflist)
             print("\t[-] Payload entropy: {}".format(payload_entropy))
-
 
     if not data_lists and not datafile:
         error_handler("No data presented for pattern analysis!")
@@ -216,7 +216,9 @@ def group_fields(payload, payload_mask, silent=True):
             bit_group = payload[position]
         prevchar = char
     if bit_group:
-        instance = (bit_group, 'mutable' if payload[-1] == '*' else 'immutable')
+        instance = (
+                bit_group, 'mutable' if payload[-1] == '*' else 'immutable'
+                )
         if not silent:
             print(instance)
         payload_groups.append(instance)
@@ -228,5 +230,8 @@ def entropy(data):
     Courtesy of rosettacode.org"""
     counter = Counter(data)
     length = float(len(data))
-    ent = -sum(count / length * log(count / length, 2) for count in counter.values())
+    ent = -sum(
+            count / length * log(count / length, 2)
+            for count in counter.values()
+            )
     return ent

@@ -18,20 +18,37 @@ from itertools import product
 
 
 class Mutate():
-    def __init__(self, mutate_payload, mutate_options=None):
+    """ Mutation class """
+
+    def __init__(self, mutate_payload, mutate_options={"STATIC": True}):
+        """Initialize the mutation engines and control the generation.
+
+        Mutation class accepts the defined payload class as an input
+        to craft further mutations.
+
+        Mutation class accepts the following options in a dictionary:
+        STATIC: BOOL_TRUE-FALSE
+            Specify if the current payload specification can be used for known
+            bad test case creation. Setting this value to FALSE disables this
+            mutation generator.
+
+        RANDOM: BOOL_TRUE-FALSE
+            Specify if random generation engine can be used to generate pseudo
+            random test cases. Setting this value to FALSE disables this mutation
+            generator. If STATIC and RANDOM are both used, the first generator to
+            be used is the STATIC one and, after the known mutations have depleted,
+            the RANDOM engine will be initialized.
+        """
         self.payload = mutate_payload
         self.options = mutate_options
-
-        self.mutate()
-
-    def mutate(self):
-        """Manage the mutation engines and produce a test case"""
         self.convert()
-        self.generate_known()
-        self.mutations = self.generate_random()
+        if self.options["STATIC"]:
+            self.mutate()
+        if self.options["RANDOM"]:
+            self.random_mutations = self.gen_random()
 
     def convert(self):
-        """Convert all field values to binary"""
+        """Convert all field values to binary data"""
         self.bitfields = []
 
         for field_number in range(self.payload.field_count()):
@@ -73,7 +90,7 @@ class Mutate():
 
             self.bitfields.append(data.zfill(data_length))
 
-    def generate_known(self):
+    def mutate(self):
         """Generate known bad mutations depending on the field type"""
         field_count = self.payload.field_count()
         self.mutations = [None] * field_count
@@ -103,37 +120,48 @@ class Mutate():
             else:
                 self.mutations[field_number] = [data]
 
-        self.generated_mutations = product(*self.mutations)
+        self.known_mutations = product(*self.mutations)
 
-    def generate_random(self):
+    def gen_random(self):
         """"Generate random mutations"""
-        field_count = self.payload.field_count()
-        mutation = [None] * field_count
+        while True:
+            field_count = self.payload.field_count()
+            mutation = [None] * field_count
 
-        for field_number in range(field_count):
-            data = self.bitfields[field_number]
-            if self.payload.bitfield_fuzzable(field_number):
-                data_len = self.payload.bitfield_length(field_number)
-                mutation[field_number] = bbuzz.mutate.random.rand_bin(
-                                                data, data_len
-                                                )
-            else:
-                mutation[field_number] = data
+            for field_number in range(field_count):
+                data = self.bitfields[field_number]
+                if self.payload.bitfield_fuzzable(field_number):
+                    data_len = self.payload.bitfield_length(field_number)
+                    mutation[field_number] = bbuzz.mutate.random.rand_bin(
+                                                    data, data_len
+                                                    )
+                else:
+                    mutation[field_number] = data
 
-        yield mutation
+            yield mutation
 
     def assemble_payload(self, mutant_instance):
-        """Assemble all the fields bitwise and transfer into bytes for network
+        """Assemble all the fields bitwise and convert into bytes for network
         transmission."""
         payload_bits = bbuzz.common.load_assemble(mutant_instance)
         payload_bytes = bbuzz.common.bin2bytes(payload_bits)
         return payload_bytes
 
-    def get_mutation(self):
+    def get(self):
         """Return the next mutation for sending over network socket"""
-        try:
-            mutation_instance = next(self.generated_mutations)
-            mutation_bytes = self.assemble_payload(mutation_instance)
-            return mutation_bytes
-        except StopIteration:
-            return False
+        if self.options["STATIC"]:
+            try:
+                mutation_instance = next(self.known_mutations)
+                mutation_bytes = self.assemble_payload(mutation_instance)
+                return mutation_bytes
+            except StopIteration:
+                self.options["STATIC"] = False
+                return "__END"
+        elif self.options["RANDOM"] and not self.options["STATIC"]:
+            try:
+                mutation_instance = next(self.random_mutations)
+                mutation_bytes = self.assemble_payload(mutation_instance)
+                return mutation_bytes
+            except StopIteration:
+                self.options["RANDOM"] = False
+                return "__FIN"

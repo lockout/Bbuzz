@@ -44,7 +44,7 @@ class Protocol():
                         "DESTINATION_IP": "STR_IP_ADDRESS"
                         "SOURCE_IP": "STR_IP_ADDRESS"
                         "IP_VERSION": INT_IP_VERSION
-                        "PROTO": INT_0xPROTO_NUMBER
+                        "PROTO": INT_0xPROTO_NUMBER (e.g., UDP=0x11, TCP=0x06)
                         "DESTINATION_PORT": INT_PORT_NUMBER
                         "SOURCE_PORT": INT_PORT_NUMBER
                         "BROADCAST": BOOL_TURE-FALSE

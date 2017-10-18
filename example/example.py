@@ -12,15 +12,15 @@ import bbuzz
 # Layer-3 fuzzing example
 # Define the base Layer-2 connection
 print("[+] Setting up the base layer connection...")
-interface = "lo"
-srcmac = '54:ee:75:40:9b:e6'
-dstmac = '98:5a:eb:dc:57:67'
+interface = "tap0"
+srcmac = '12:e9:d8:6a:e8:f0'
+dstmac = '52:54:00:12:34:56'
 proto = bbuzz.protocol.Protocol(
         'raw2',
         {
             "SOURCE_MAC": srcmac,
             "DESTINATION_MAC": dstmac,
-            "ETHER_TYPE": "0x86DD"
+            "ETHER_TYPE": "0x86DD"                  # IPv6
             }
         )
 proto.create(interface)
@@ -33,20 +33,23 @@ load.add('6',                                       # Version number
             "FORMAT": "dec",
             "TYPE": "static",
             "LENGTH": 4,
+            "FUZZABLE": False
             }
         )
 load.add('0',                                      # Traffic class
         {
             "FORMAT": "bin",
             "TYPE": "binary",
-            "LENGTH": 8
+            "LENGTH": 8,
+            "FUZZABLE": True,
             }
         )
 load.add('00000000000000000000',                    # Flow label
         {
             "FORMAT": "bin",
             "TYPE": "binary",
-            "LENGTH": 20
+            "LENGTH": 20,
+            "FUZZABLE": False
             }
         )
 load.add('0000',                                    # Payload length
@@ -62,7 +65,7 @@ load.add('11',                                      # Next header
             "FORMAT": "hex",
             "TYPE": "numeric",
             "LENGTH": 8,
-            "FUZZABLE": False
+            "FUZZABLE": True
             }
         )
 load.add('ff',                                      # Hop limit
@@ -70,18 +73,18 @@ load.add('ff',                                      # Hop limit
             "FORMAT": "hex",
             "TYPE": "numeric",
             "LENGTH": 8,
-            "FUZZABLE": False
+            "FUZZABLE": True
             }
         )
-load.add(bbuzz.common.ip2bin('fe80::61f7:44e6:1fbb:5980'),
+load.add(bbuzz.common.ip2bin('fe80::10e9:d8ff:fe6a:e8f0'),
         {                                           # Source IP
             "FORMAT": "bin",
             "TYPE": "binary",
             "LENGTH": 128,
-            "FUZZABLE": False
+            "FUZZABLE": True
             }
         )
-load.add(bbuzz.common.ip2bin('fe80::1471:b0bd:d614:55bc'),
+load.add(bbuzz.common.ip2bin('fe80::5054:ff:fe12:3456'),
         {                                           # Destination IP
             "FORMAT": "bin",
             "TYPE": "binary",
@@ -92,24 +95,9 @@ load.add(bbuzz.common.ip2bin('fe80::1471:b0bd:d614:55bc'),
 
 # Generate payload mutations
 print("[+] Generating mutations...")
-mutagen = bbuzz.mutate.Mutate(load)
-while True:
-    case = mutagen.get_mutation()
-    if not case:
-        break
+mutagen = bbuzz.mutate.Mutate(load, {"STATIC": True, "RANDOM": True})
 
-mutagen.generate_random()
-
-bbuzz.common.payload_analyze(datafile="/home/lockout/Source/Bbuzz/examples/icc-usecase/icc.packets")
-
-"""
-# Setup and execute fuzzing
-print("[+] Fuzzing...")
-print("Overall test cases: {0}".format(mutagen.summary()[0]))
-print(
-    "To obeserve output run: tcpdump -i {0} -nvveXA -s0 ether host {1}"
-    .format(interface, srcmac)
-    )
-fuzz = bbuzz.fuzz.Fuzz()
-fuzz.fuzz(mutagen, proto)
-"""
+# Sart fuzzing
+print("[+] Starting fuzzing...")
+fuzzer = bbuzz.fuzz.Fuzz()
+fuzzer.fuzz(mutagen, proto)
