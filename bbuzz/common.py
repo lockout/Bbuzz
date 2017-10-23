@@ -44,7 +44,8 @@ def ip2hex(ip_address):
         octets = ip_address.split('.')
         hexip = b""
         for octet in octets:
-            hexip = hexip + unhexlify(hex(int(octet))[2:])
+            hexoct = hex(int(octet))[2:].zfill(2)
+            hexip = hexip + unhexlify(hexoct)
         return hexip
     if ip_version == 6:
         zeroes = 16 - len(mac2hex(ip_address))
