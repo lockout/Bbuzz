@@ -50,7 +50,7 @@ def ip2hex(ip_address):
     if ip_version == 6:
         zeroes = 16 - len(mac2hex(ip_address))
         full_ip_address = ip_address.replace(
-                        '::', '00' * zeroes).replace(':', '')
+            '::', '00' * zeroes).replace(':', '')
         return unhexlify(full_ip_address)
 
 
@@ -157,7 +157,7 @@ def payload_analyze(data_lists=[], datafile="", detailed_analysis=2):
                 data_lists.append(data.strip())
             bindata.close()
     if data_lists:
-        """Get the bit mask of payload"""
+        # Get the bit mask of payload
         reflist = data_lists[0]
         payload_mask = ['#'] * len(reflist)
         fail = False
@@ -177,13 +177,13 @@ def payload_analyze(data_lists=[], datafile="", detailed_analysis=2):
         print("[+] Payload mask:\n{0}".format(str_payload_mask))
 
         if detailed_analysis >= 1:
-            """Extract bit-groups"""
+            # Extract bit-groups
             print("[+] Bit-groups:")
             field_list = group_fields(reflist, str_payload_mask, silent=False)
             print("\t[-] Bit group: {}".format(field_list))
 
         if detailed_analysis >= 2:
-            """Calculate entropy for bit-groups"""
+            # Calculate entropy for bit-groups
             print("[+] Bit group entropy:")
             payload_entropy = entropy(reflist)
             print("\t[-] Payload entropy: {}".format(payload_entropy))
@@ -218,8 +218,8 @@ def group_fields(payload, payload_mask, silent=True):
         prevchar = char
     if bit_group:
         instance = (
-                bit_group, 'mutable' if payload[-1] == '*' else 'immutable'
-                )
+            bit_group, 'mutable' if payload[-1] == '*' else 'immutable'
+            )
         if not silent:
             print(instance)
         payload_groups.append(instance)
@@ -232,7 +232,7 @@ def entropy(data):
     counter = Counter(data)
     length = float(len(data))
     ent = -sum(
-            count / length * log(count / length, 2)
-            for count in counter.values()
-            )
+        count / length * log(count / length, 2)
+        for count in counter.values()
+        )
     return ent
